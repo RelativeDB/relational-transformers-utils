@@ -26,13 +26,15 @@ jobs:
       name: docs
       url: https://utils.relationaltransformers.com/
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
       - name: Install documentation dependencies
-        run: python -m pip install -e '.[docs]'
+        run: |
+          python -m pip install --no-deps -e '.[docs]'
+          python -m pip install numpy myst-parser sphinx sphinx-copybutton sphinx-rtd-theme sphinx-inline-tabs sphinx-toolbox
       - name: Build documentation strictly
         run: python -m sphinx -W -c docs -d docs/_build/doctrees -b html . docs/_build/html
       - name: Configure AWS credentials

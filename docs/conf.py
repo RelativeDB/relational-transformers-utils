@@ -36,6 +36,7 @@ html_context = {
 autodoc_typehints = "description"
 autodoc_member_order = "bysource"
 autoclass_content = "both"
+autodoc_mock_imports = ["relational_transformers", "safetensors", "torch"]
 myst_heading_anchors = 3
 
 intersphinx_mapping = {
