@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "relational-transformers-utils"
+version = "0.1.0"
+description = "Context collection, normalization, metrics, quantization, and benchmark utilities for Relational Transformers"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "RelativeDB" }]
+dependencies = [
+    "numpy>=1.24",
+    "torch>=2.2",
+    "safetensors>=0.4",
+    "relational-transformers>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6"]
+docs = [
+    "myst-parser>=3",
+    "sphinx>=7",
+    "sphinx-copybutton>=0.5",
+    "sphinx-rtd-theme>=2",
+    "sphinx-inline-tabs>=2023.4.21",
+    "sphinx-toolbox>=3.5",
+]
+
+[project.scripts]
+rt-quantize = "relational_transformers_utils.quantization:main"
+
+[project.urls]
+Homepage = "https://relql.com"
+Documentation = "https://utils.relationaltransformers.com"
+Repository = "https://github.com/RelativeDB/relational-transformers-utils"
+
+[tool.setuptools]
+packages = [
+    "relational_transformers_utils",
+    "relben",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
