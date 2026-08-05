@@ -21,6 +21,24 @@ Guide: [Context Collection](../context_collection.md)
    :members:
 ```
 
+## Deterministic Sampling
+
+Guide: [Context Collection](../context_collection.md)
+
+```{eval-rst}
+.. autoclass:: relational_transformers_utils.StdRng
+   :members:
+
+.. autofunction:: relational_transformers_utils.rand_sample
+
+.. autofunction:: relational_transformers_utils.reference_walk_counts
+
+.. autoclass:: relational_transformers_utils.ContextGraph
+   :members:
+
+.. autoclass:: relational_transformers_utils.ContextTruncated
+```
+
 ## Schema
 
 ```{eval-rst}
@@ -37,6 +55,40 @@ Guide: [Context Collection](../context_collection.md)
    :members:
 
 .. autoclass:: relational_transformers_utils.ValueType
+   :members:
+```
+
+## Traversal
+
+Guide: [Traversal Strategies](../traversal.md)
+
+```{eval-rst}
+.. autoclass:: relational_transformers_utils.ContextPolicy
+   :members:
+
+.. autoclass:: relational_transformers_utils.BreadthFirstTraversal
+   :members:
+
+.. autoclass:: relational_transformers_utils.ReferenceTraversal
+   :members:
+
+.. autoclass:: relational_transformers_utils.TaskAdapter
+   :members:
+
+.. autoclass:: relational_transformers_utils.TraversalResult
+   :members:
+
+.. autoclass:: relational_transformers_utils.ColumnarStore
+   :members:
+
+.. autoclass:: relational_transformers_utils.ColumnarTraversal
+   :members:
+```
+
+## Text Encoding
+
+```{eval-rst}
+.. autoclass:: relational_transformers_utils.CachedEncoder
    :members:
 ```
 

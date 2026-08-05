@@ -16,12 +16,14 @@ from enum import Enum
 from typing import Any
 
 import numpy as np
-from relational_transformers.constants import SEM_BOOLEAN, SEM_DATETIME, SEM_NUMBER
 
-from .rows import Row, TemporalBound
-from .schema import Schema, ValueType
+from .schema import Row, Schema, TemporalBound, ValueType
 
 __all__ = [
+    "SEM_NUMBER",
+    "SEM_TEXT",
+    "SEM_DATETIME",
+    "SEM_BOOLEAN",
     "NormalizationError",
     "NormalizationMode",
     "ColumnStats",
@@ -30,6 +32,10 @@ __all__ = [
     "mean_std",
     "normalize_sequence",
 ]
+
+# The stable RT-J wire codes for cell semantic types, mirrored from
+# relational_transformers.constants so this module imports without torch.
+SEM_NUMBER, SEM_TEXT, SEM_DATETIME, SEM_BOOLEAN = 0, 1, 2, 3
 
 
 class NormalizationError(RuntimeError):
@@ -47,12 +53,20 @@ class NormalizationMode(str, Enum):
 
     ZERO_SHOT = "zero_shot"
     REFERENCE = "reference"
+    # A readable alias for callers that think of the second mode by how its
+    # values are obtained rather than by the implementation it conforms to.
+    STATISTICS = "reference"
 
     @classmethod
     def coerce(cls, value: NormalizationMode | str) -> NormalizationMode:
-        if isinstance(value, NormalizationMode):
+        if isinstance(value, cls):
             return value
-        return cls(str(value))
+        try:
+            return cls(str(value).lower())
+        except ValueError as e:
+            choices = ", ".join(sorted({m.value for m in cls}))
+            raise ValueError(
+                f"unknown normalization mode {value!r}; expected {choices}") from e
 
 
 def bf16_as_f32(values: np.ndarray) -> np.ndarray:
@@ -191,8 +205,8 @@ class ColumnStats:
         sd = float(vals.std(ddof=1)) if vals.size > 1 else 0.0
         task_stats = dict(self.task_stats)
         task_stats[_task_key(task)] = (float(vals.mean()), sd if sd != 0.0 else 1.0)
-        return ColumnStats(self.stats, dt=self.dt, bound=self.bound,
-                           task_stats=task_stats)
+        return type(self)(self.stats, dt=self.dt, bound=self.bound,
+                          task_stats=task_stats)
 
     def with_column_values(self, table: str, column: str,
                            values: Sequence[float]) -> ColumnStats:
@@ -204,8 +218,8 @@ class ColumnStats:
         sd = float(vals.std(ddof=1)) if vals.size > 1 else 0.0
         stats = dict(self.stats)
         stats[(table, column)] = (float(vals.mean()), sd if sd != 0.0 else 1.0)
-        return ColumnStats(stats, dt=self.dt, bound=self.bound,
-                           task_stats=self.task_stats)
+        return type(self)(stats, dt=self.dt, bound=self.bound,
+                          task_stats=self.task_stats)
 
     def with_datetime_values(self, values: Sequence[float]) -> ColumnStats:
         """Return a copy with the reference's global datetime normalizer.
@@ -217,9 +231,9 @@ class ColumnStats:
         if vals.size == 0:
             raise ValueError("datetime statistics need at least one finite value")
         sd = float(vals.std(ddof=0)) if vals.size > 1 else 0.0
-        return ColumnStats(self.stats,
-                           dt=(float(vals.mean()), sd if sd != 0.0 else 1.0),
-                           bound=self.bound, task_stats=self.task_stats)
+        return type(self)(self.stats,
+                          dt=(float(vals.mean()), sd if sd != 0.0 else 1.0),
+                          bound=self.bound, task_stats=self.task_stats)
 
     def task(self, task: Any) -> tuple[float, float]:
         key = _task_key(task)

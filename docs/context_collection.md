@@ -67,3 +67,23 @@ list of ids.
 enter a context, and `CscIndex.build` can also apply a bound at snapshot time. Naive
 datetimes are treated as UTC. Fit normalization statistics under the same bound, as the
 [Normalization](normalization.md) page explains.
+
+## Deterministic Sampling
+
+Context sampling must reproduce the RT-J reference byte for byte, so the
+primitives live here once and every consumer shares them:
+
+- `StdRng` is the rand-0.9.1 `StdRng`-compatible ChaCha12 stream, including
+  `seed_from_u64`'s PCG expansion and Canon integer sampling.
+- `rand_sample` reproduces rand's `seq::index::sample` selection strategy.
+- `reference_walk_counts` runs the vectorized peer-ranking walk over a CSR
+  graph, one walk-wide PCG64 draw per step.
+- `ContextGraph` in `relational_transformers_utils.graph` assembles ordered
+  contexts over array-backed nodes and edges: a BFS from the target with
+  fanout caps and cell budgets, an optional peer-ranking walk sharing
+  `reference_walk_counts`' draw protocol, and a fallback that pads short
+  contexts. A context that overflows its node buffer raises
+  `ContextTruncated`; nothing is silently dropped.
+
+One draw more or less shifts every later choice, so ports of these functions
+follow the reference statement for statement.

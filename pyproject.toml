@@ -49,3 +49,11 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ported statement-for-statement from the RT-J reference sampler; structure
+# is part of the RNG-parity contract, so style rules stay out of it.
+"relational_transformers_utils/walks.py" = ["E702", "B905"]
+"relational_transformers_utils/graph.py" = ["E702", "B905"]
+"relational_transformers_utils/traversal.py" = ["E402", "E702", "E741", "B905", "F841"]
+"relational_transformers_utils/columnar.py" = ["E741", "B905", "B007"]

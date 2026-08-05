@@ -121,3 +121,24 @@ def test_targets_texts_and_nulls_become_zero():
     assert normalized[1] == 0.0
     assert normalized[2] == 0.0
     assert normalized[3] == 0.0
+
+
+def test_column_stats_copies_transform_and_report():
+    stats = ColumnStats.fit(_schema(), _rows())
+    mu, sd = stats.stats[("customers", "age")]
+    assert stats.transform("customers", "age", mu) == pytest.approx(0.0)
+    assert stats.transform_datetime(stats.dt[0]) == pytest.approx(0.0)
+
+    widened = stats.with_column_values("orders", "amount", [10.0, 30.0])
+    assert widened.has("orders", "amount")
+    assert type(widened) is ColumnStats           # copies keep the class
+    redated = stats.with_datetime_values([1.0, 3.0])
+    assert redated.dt == (pytest.approx(2.0), pytest.approx(1.0))
+
+    tasked = stats.with_task_values("churn", [0.0, 1.0])
+    assert tasked.task("churn") == (pytest.approx(0.5),
+                                    pytest.approx(np.std([0.0, 1.0], ddof=1)))
+    assert len(tasked) == len(stats)
+    assert "columns" in repr(tasked)
+    with pytest.raises(ValueError, match="at least one finite"):
+        stats.with_column_values("orders", "amount", [float("nan")])

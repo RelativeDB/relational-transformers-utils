@@ -14,6 +14,7 @@ core package owns the model; this package covers the numeric steps between.
    docs/installation
    docs/quickstart
    docs/context_collection
+   docs/traversal
    docs/normalization
    docs/ablation
    docs/metrics

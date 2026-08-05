@@ -2,8 +2,7 @@
 
 from .catalog import EVAL_TASKS, EXTRA_TASKS, EvalTask, select_tasks
 from .hurdle import nmae, tune_hurdle_gate
-from .report import write_report
-from .submission import EvalSample, atomic_json, write_manifest, write_submission
+from .submission import EvalSample, atomic_json, write_manifest, write_report, write_submission
 
 __version__ = "0.1.0"
 

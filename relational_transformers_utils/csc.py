@@ -16,8 +16,7 @@ from typing import Any
 
 import numpy as np
 
-from .rows import Row, TemporalBound
-from .schema import LinkDef, Schema
+from .schema import LinkDef, Row, Schema, TemporalBound
 
 __all__ = ["CscIndex", "CscAdjacency"]
 
