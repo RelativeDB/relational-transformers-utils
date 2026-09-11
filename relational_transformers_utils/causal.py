@@ -16,8 +16,12 @@ from numbers import Integral
 import numpy as np
 
 from ._greedy_mec import coupling_masses
+from .causal_selection import CausalFeatureSelector, FeatureSelectionResult, FeatureSubsetScore
 
 __all__ = [
+    "CausalFeatureSelector",
+    "FeatureSelectionResult",
+    "FeatureSubsetScore",
     "DirectionResult",
     "GraphCandidate",
     "GraphResult",

@@ -65,7 +65,8 @@ metrics = AblationEvaluator(examples, {"support": [11, 12]})(model)
 
 `relational_transformers_utils.causal` provides entropy-based pairwise direction
 scores, paired-row bootstrap stability, and bounded orientation of a supplied
-small graph skeleton. Inputs are explicitly categorical observations. Scores are
+small graph skeleton. `CausalFeatureSelector` proposes available column/join-path
+groups and selects them with a caller-supplied validation evaluator. Inputs are explicitly categorical observations. Scores are
 causal-model preferences under assumptions, not prediction contribution scores.
 See [Causal discovery](docs/causal.md) for the API, assumptions, and upstream provenance.
 

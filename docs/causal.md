@@ -97,6 +97,123 @@ parent-configuration count across all scored candidates. Only observed parent
 configurations are included, with no smoothing. Large sparse tables and rare
 categories can make rankings unreliable even below the resource caps.
 
+## Select feature groups and join paths
+
+`CausalFeatureSelector` uses a graph to propose subsets and a validation metric to
+choose between them. Each named group can represent columns, cells, or an entire
+join path. Selection is for prediction, not for identifying an intervention target
+or a valid causal adjustment set.
+
+For `stock_shortage -> fulfillment_delay -> cancellation`, inventory information
+may be available at order creation while the future fulfillment delay is not.
+Declare availability explicitly; the selector cannot infer event-time availability
+from column names or audit your retrieval query.
+
+```python
+from relational_transformers_utils.causal import CausalFeatureSelector, orient_graph
+
+# Fit this graph on a discovery/training partition, separate from validation.
+# Historical outcomes may be used for discovery, but not as prediction inputs.
+graph = orient_graph(
+    discovery_columns,  # stock_shortage, fulfillment_delay, cancellation, region
+    skeleton=[("stock_shortage", "fulfillment_delay"),
+              ("fulfillment_delay", "cancellation")],
+)
+selector = CausalFeatureSelector(
+    graph,
+    target="cancellation",
+    feature_groups={
+        "inventory_join": ["stock_shortage"],
+        "order_delay": ["fulfillment_delay"],
+        "customer": ["region"],
+    },
+    # At order creation: delay is unavailable. It will never reach the evaluator.
+    available_groups=["inventory_join", "customer"],
+    greater_is_better=False,  # Brier score: smaller is better
+    score_tolerance=0.002,   # prefer fewer groups within 0.002 of the best score
+    max_evaluations=32,
+)
+```
+
+Provide `evaluate(selected_groups) -> float`. This callback builds the selected
+contexts, runs the model, and scores predictions on a **fixed validation set**.
+The selector neither retrains the model nor accesses labels itself. For fixed cell
+positions in existing `RelationalBatch` inputs:
+
+```python
+from relational_transformers_utils.metrics import brier_score
+
+# Illustrative positions only: adapt them to your batch's actual cell layout.
+# Target cells and mandatory structural context must not be listed here.
+group_positions = {
+    "inventory_join": [1, 2],
+    "order_delay": [3],
+    "customer": [4],
+}
+all_positions = {p for positions in group_positions.values() for p in positions}
+
+def evaluate(selected_groups):
+    keep = {p for name in selected_groups for p in group_positions[name]}
+    remove = sorted(all_positions - keep)
+    inputs = [batch.ablate(remove) if remove else batch for batch in validation_inputs]
+    predictions = model.predict(inputs)
+    return brier_score(predictions, validation_labels)
+
+result = selector.select(evaluate)
+print(result.selected_groups)
+print(result.validation_score)
+print(result.excluded_unavailable)
+print(result.budget_exhausted)
+for trial in result.evaluations:
+    print(trial.groups, trial.score, trial.proposal)
+```
+
+For variable-length rows or retrieval-based contexts, implement the callback by
+constructing each context from the selected join paths. The returned group names
+are the selection plan; applying that plan to SQL, retrieval, encoding, or future
+batches remains the caller's responsibility. An unavailable group must be removed
+from every evaluated context, not merely ignored when scoring. A group containing
+both available and unavailable columns must be split or excluded as a whole.
+Overlapping groups are allowed: retain the union of selected cells/joins.
+
+### Selection rules
+
+1. Evaluate the empty-group baseline and all available groups.
+2. Evaluate available groups intersecting target parents and target ancestors.
+   Use the **union across candidate graphs** within `graph_tolerance` bits of the
+   minimum, rather than arbitrarily choosing one tied orientation. The selector
+   reads `graph.candidates`; it does not interpret `graph.edges` as the only
+   possible graph. Its graph tolerance is independent of the tolerance originally
+   used by `orient_graph`.
+3. Prefer fewer groups among evaluated subsets within `score_tolerance` of the
+   best validation metric. Equal-size ties are resolved alphabetically.
+4. Try single-group deletions from that preferred subset and repeat while the
+   preferred subset changes. Stop when no progress is possible or the evaluation
+   budget is exhausted. Each distinct subset is evaluated once per `select` call.
+
+`score_tolerance` is always measured from the **best score observed across all
+trials**, so allowed losses cannot accumulate across removal steps. Set it to zero
+for strict best-score selection. `max_evaluations` must cover the distinct initial
+proposals; otherwise construction raises `ValueError` before running a callback.
+If the budget prevents remaining deletions, `budget_exhausted` is true. Metrics
+must be finite scalars; undefined AUROC on a single-class validation set raises
+an error rather than silently influencing the selection.
+
+The empty subset still contains mandatory context that the callback preserves.
+The full baseline deliberately permits available non-ancestor features: a flawed
+causal graph must not automatically exclude a useful predictor. The algorithm is
+a bounded greedy search, not exhaustive subset optimization; feature interactions
+can create better subsets it never visits. Group count is a simplicity preference,
+not a measure of join cost, latency, or number of cells.
+
+Use discovery/training data for graph fitting, validation data for subset selection,
+and untouched test data for the final performance estimate. Repeated evaluation
+can overfit a validation set. Keep entity/time splits and retrieval cutoffs intact.
+Ablating a fixed model can create unusual contexts; if deployment involves fitting
+a new head for each subset, the callback must fit on training data only and then
+score on the same validation split. Causal scores guide proposals; they are never
+used as feature-importance scores or substituted for validation performance.
+
 ## Interpretation and assumptions
 
 The entropic framework assumes acyclic causal structure, causal sufficiency (no
