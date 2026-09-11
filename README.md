@@ -2,7 +2,8 @@
 
 Utility tooling that wires [Relational Transformers](https://relationaltransformers.com)
 into a working product: context collection, normalization, ablation measurement,
-metrics, and checkpoint quantization. A second package, `relben`, holds RelBench
+metrics, checkpoint quantization, and experimental categorical causal discovery.
+A second package, `relben`, holds RelBench
 benchmark utilities. Everything is pure Python over numpy and torch.
 
 Applications own retrieval and encoding. This package covers the numeric steps between
@@ -59,6 +60,28 @@ from relational_transformers_utils import AblationEvaluator
 
 metrics = AblationEvaluator(examples, {"support": [11, 12]})(model)
 ```
+
+### Experimental causal discovery
+
+`relational_transformers_utils.causal` provides entropy-based pairwise direction
+scores, paired-row bootstrap stability, and bounded orientation of a supplied
+small graph skeleton. Inputs are explicitly categorical observations. Scores are
+causal-model preferences under assumptions, not prediction contribution scores.
+See [Causal discovery](docs/causal.md) for the API, assumptions, and upstream provenance.
+
+```python
+from relational_transformers_utils.causal import entropic_direction
+
+x = [0, 1, 2, 3] * 50
+y = [value // 2 for value in x]
+result = entropic_direction(x, y, names=("X", "Y"), bootstrap=100, seed=42)
+print(result.direction)    # ('X', 'Y') under the default exogenous-noise criterion
+print(result.margin_bits)  # 1.0; positive favors X -> Y
+```
+
+This synthetic example illustrates the score; the direction alone does not establish
+causation. Use `criterion="total"` to include the proposed cause's marginal entropy
+(the example then ties), or `orient_graph` to rank orientations of a known skeleton.
 
 ### Metrics
 

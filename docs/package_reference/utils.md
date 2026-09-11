@@ -156,3 +156,12 @@ Guide: [Quantization](../quantization.md)
 
 .. autofunction:: relational_transformers_utils.quantize_state
 ```
+
+## Experimental Causal Discovery
+
+Guide: [Causal Discovery](../causal.md)
+
+```{eval-rst}
+.. automodule:: relational_transformers_utils.causal
+   :members:
+```

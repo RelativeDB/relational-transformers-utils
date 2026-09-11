@@ -17,6 +17,7 @@ core package owns the model; this package covers the numeric steps between.
    docs/traversal
    docs/normalization
    docs/ablation
+   docs/causal
    docs/metrics
    docs/quantization
    docs/relben
